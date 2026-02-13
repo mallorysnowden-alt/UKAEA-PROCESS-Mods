@@ -1317,6 +1317,7 @@ class Costs2015:
         # 10    format(1x,a,t73,f10.0, tl1, a)
 
         # Create variable name of format s + array entry
+        vname = f"s({vname})"
 
         po.ovarrf(file, descr, vname, value)
 

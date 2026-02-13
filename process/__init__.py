@@ -6,4 +6,7 @@ from importlib.metadata import version
 root_logger = logging.getLogger(__name__)
 root_logger.setLevel(logging.DEBUG)
 
-__version__ = version("process")
+try:
+    __version__ = version("process")
+except Exception:
+    __version__ = "dev"

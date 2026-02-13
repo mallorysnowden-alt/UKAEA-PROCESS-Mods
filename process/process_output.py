@@ -31,10 +31,18 @@ class OutputFileManager:
 
     @classmethod
     def close_idempotence_files(cls):
-        Path(cls._outfile.name).unlink()
-        Path(cls._mfile.name).unlink()
+        outfile_path = Path(cls._outfile.name)
+        mfile_path = Path(cls._mfile.name)
         cls._outfile.close()
         cls._mfile.close()
+        try:
+            outfile_path.unlink()
+        except PermissionError:
+            pass
+        try:
+            mfile_path.unlink()
+        except PermissionError:
+            pass
         cls.open_files(mode="a")
 
     @classmethod

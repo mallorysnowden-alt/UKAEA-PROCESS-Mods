@@ -44,10 +44,8 @@ def write(models, _outfile):
     models.physics.calculate_effective_charge_ionisation_profiles()
     models.physics.outplas()
 
-    # Detailed physics, currently only done at final point as values are not used
-    # by any other functions
-    models.physics_detailed.run()
-    models.physics_detailed.output_detailed_physics()
+    # DetailedPhysics removed (Coulomb log profiles, Debye profiles, etc.)
+    # for streamlined technoeconomic analysis
 
     # TODO what is this? Not in caller.f90?
     models.current_drive.output_current_drive()
@@ -56,7 +54,7 @@ def write(models, _outfile):
     models.pulse.run(output=True)
     models.physics.outtim()
 
-    models.divertor.run(output=True)
+    # Divertor output removed (module deleted for streamlined technoeconomic analysis)
 
     # Machine Build Model
     # Radial build

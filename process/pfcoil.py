@@ -2275,82 +2275,7 @@ class PFCoil:
                     "(temp_cs_superconductor_margin_min)",
                     tfv.temp_cs_superconductor_margin_min,
                 )
-                # only output CS fatigue model for pulsed reactor design
-                if pv.f_c_plasma_inductive > 0.0e-4:
-                    op.ovarre(
-                        self.outfile,
-                        "Residual hoop stress in CS Steel (Pa)",
-                        "(residual_sig_hoop)",
-                        csfv.residual_sig_hoop,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "Minimum burn time (s)",
-                        "(t_burn_min)",
-                        ctv.t_burn_min,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "Initial vertical crack size (m)",
-                        "(t_crack_vertical)",
-                        csfv.t_crack_vertical,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "Initial radial crack size (m)",
-                        "(t_crack_radial)",
-                        csfv.t_crack_radial,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "CS turn area (m)",
-                        "(a_cs_turn)",
-                        pfcoil_variables.a_cs_turn,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "CS turn length (m)",
-                        "(dr_cs_turn)",
-                        pfcoil_variables.dr_cs_turn,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "CS turn internal cable space radius (m)",
-                        "(radius_cs_turn_cable_space)",
-                        pfcoil_variables.radius_cs_turn_cable_space,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "CS turn width (m)",
-                        "(dz_cs_turn)",
-                        pfcoil_variables.dz_cs_turn,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "CS structural vertical thickness (m)",
-                        "(dz_cs_turn_conduit)",
-                        csfv.dz_cs_turn_conduit,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "CS structural radial thickness (m)",
-                        "(dr_cs_turn_conduit)",
-                        csfv.dr_cs_turn_conduit,
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "Allowable number of cycles till CS fracture",
-                        "(n_cycle)",
-                        csfv.n_cycle,
-                        "OP ",
-                    )
-                    op.ovarre(
-                        self.outfile,
-                        "Minimum number of cycles required till CS fracture",
-                        "(n_cycle_min)",
-                        csfv.n_cycle_min,
-                        "OP ",
-                    )
+                # CS fatigue output removed for streamlined technoeconomic analysis
                 # Check whether CS coil is hitting any limits
                 if (
                     abs(pfcoil_variables.j_cs_flat_top_end)
@@ -3359,16 +3284,7 @@ class CSCoil:
             # Now a user input
             # alstroh = min( (2.0e0*csytf/3.0e0), (0.5e0*csutf) )
 
-            # Calculation of CS fatigue
-            # this is only valid for pulsed reactor design
-            if pv.f_c_plasma_inductive > 0.0e-4:
-                csfv.n_cycle, csfv.t_crack_radial = self.cs_fatigue.ncycle(
-                    pfcoil_variables.sig_hoop,
-                    csfv.residual_sig_hoop,
-                    csfv.t_crack_vertical,
-                    csfv.dz_cs_turn_conduit,
-                    csfv.dr_cs_turn_conduit,
-                )
+            # CS fatigue analysis removed for streamlined technoeconomic analysis
 
             # Now steel area fraction is iteration variable and constraint
             # equation is used for Central Solenoid stress

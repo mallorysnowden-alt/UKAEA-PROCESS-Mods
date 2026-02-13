@@ -300,7 +300,18 @@ class Caller:
             # DCLL model
             self.models.dcll.run(output=False)
 
-        self.models.divertor.run(output=False)
+        # Divertor heat load model removed for streamlined technoeconomic analysis.
+        # Inline the essential divertor nuclear/radiation power split (needed by blanket power balance).
+        data_structure.fwbs_variables.p_div_nuclear_heat_total_mw = (
+            data_structure.physics_variables.p_plasma_neutron_mw
+            * data_structure.fwbs_variables.f_ster_div_single
+            * data_structure.divertor_variables.n_divertors
+        )
+        data_structure.fwbs_variables.p_div_rad_total_mw = (
+            data_structure.physics_variables.p_plasma_rad_mw
+            * data_structure.fwbs_variables.f_ster_div_single
+            * data_structure.divertor_variables.n_divertors
+        )
 
         self.models.cryostat.run()
 

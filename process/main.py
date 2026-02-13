@@ -68,7 +68,7 @@ from process.current_drive import (
     NeutralBeam,
 )
 from process.dcll import DCLL
-from process.divertor import Divertor
+# Divertor module removed for streamlined technoeconomic analysis
 from process.fw import FirstWall
 from process.hcpb import CCFE_HCPB
 from process.ife import IFE
@@ -93,7 +93,7 @@ from process.io.process_funcs import (
 )
 from process.log import logging_model_handler, show_errors
 from process.pfcoil import PFCoil
-from process.physics import DetailedPhysics, Physics
+from process.physics import Physics
 from process.plasma_geometry import PlasmaGeom
 from process.plasma_profiles import PlasmaProfile
 from process.power import Power
@@ -659,7 +659,7 @@ class Models:
         self.resistive_tf_coil = ResistiveTFCoil()
         self.copper_tf_coil = CopperTFCoil()
         self.aluminium_tf_coil = AluminiumTFCoil()
-        self.divertor = Divertor()
+        # self.divertor removed (module deleted for streamlined technoeconomic analysis)
         self.structure = Structure()
         self.plasma_geom = PlasmaGeom()
         self.availability = Availability()
@@ -685,9 +685,7 @@ class Models:
         self.physics = Physics(
             plasma_profile=self.plasma_profile, current_drive=self.current_drive
         )
-        self.physics_detailed = DetailedPhysics(
-            plasma_profile=self.plasma_profile,
-        )
+        # DetailedPhysics removed for streamlined technoeconomic analysis
         self.neoclassics = Neoclassics()
         self.stellarator = Stellarator(
             availability=self.availability,

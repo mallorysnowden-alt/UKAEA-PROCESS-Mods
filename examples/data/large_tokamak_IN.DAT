@@ -53,7 +53,7 @@ p_hcd_injected_max = 200.0
 
 * L-H threshold scaling *
 *-----------------------*
-icc = 15
+*icc = 15 * DISABLED - L-H threshold
 
 * Net electric power lower limit *
 *--------------------------------*
@@ -86,7 +86,7 @@ icc = 33
 
 * Dump voltage upper limit *
 *--------------------------*
-icc = 34
+*icc = 34 * DISABLED - Dump voltage upper limit
 v_tf_coil_dump_quench_max_kv = 10.0
 
 * J_winding pack protection *
@@ -111,7 +111,7 @@ f_alpha_energy_confinement_min = 5.0
 
 * dump time constraint for VV stresses *
 *--------------------------------------*
-icc = 65
+*icc = 65 * DISABLED - Dump time VV stress
 
 * CS stress limit *
 *-----------------*
@@ -154,11 +154,11 @@ pflux_fw_neutron_max_mw = 2.0
 *--------------------------*
 icc = 9
 * Maximum allowable value fusion power [MW]
-p_fusion_total_max_mw = 3000
+p_fusion_total_max_mw = 10000
 
 * Burn time lower limit *
 *-----------------------*
-icc = 13 
+*icc = 13 * DISABLED - Burn time lower limit 
 * minimum burn time [s]
 t_burn_min = 7200.0
 
@@ -173,8 +173,8 @@ b_plasma_toroidal_on_axis = 5.7
 
 * rmajor [m]
 ixc = 3
-boundl(3) = 8.0
-boundu(3) = 9.0
+boundl(3) = 2.0
+boundu(3) = 20.0
 rmajor = 8.0
 
 * temp_plasma_electron_vol_avg_kev [keV]

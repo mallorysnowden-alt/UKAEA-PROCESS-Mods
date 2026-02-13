@@ -303,7 +303,7 @@ cost_factor_tf_coils: float = None
 """cost scaling factor for TF coils"""
 
 
-cost_factor_tf_coils: float = None
+cost_factor_fwbs: float = None
 """cost scaling factor for fwbs"""
 
 
