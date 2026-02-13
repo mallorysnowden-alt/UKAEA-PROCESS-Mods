@@ -509,8 +509,8 @@ learning_rate_vv = 0.10
 learning_rate_bop = 0.05
 learning_rate_misc = 0.08
 
-* Inflation factor from 1990$ to 2026$
-inflation_factor = 2.49
+* Inflation factor from 2014$ to 2026$
+inflation_factor = 1.37
 
 * OPEX as fraction of CAPEX per year
 opex_fraction = 0.03

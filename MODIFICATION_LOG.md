@@ -74,7 +74,7 @@ by the 2015 Kovari costing model (`process/costs_2015.py`).
 ### Cost Model Changes (`process/costs_2015.py`)
 - **Switched to 2015 Kovari model** (`cost_model = 1`) with LSA = 2
 - **NOAK learning curve** via Wright's law: `C_NOAK = C_FOAK * n^(-b)`, where `b = -log2(1 - learning_rate)`, applied as idempotent post-processing scale on `s_cost[]`
-- **Inflation adjustment**: All costs scaled from 1990$ to 2026$ (factor = 2.49)
+- **Inflation adjustment**: All costs scaled from 2014$ to 2026$ (factor = 1.37)
 - **Replaced LCOE formula** with Capital Recovery Factor (CRF) approach:
   ```
   CRF = r(1+r)^L / ((1+r)^L - 1)
@@ -110,7 +110,7 @@ by the 2015 Kovari costing model (`process/costs_2015.py`).
 | `learning_rate_vv` | 0.10 | Learning rate for vacuum vessel |
 | `learning_rate_bop` | 0.05 | Learning rate for balance of plant |
 | `learning_rate_misc` | 0.08 | Learning rate for miscellaneous |
-| `inflation_factor` | 2.49 | Inflation multiplier (1990$ -> 2026$) |
+| `inflation_factor` | 1.37 | Inflation multiplier (2014$ -> 2026$) |
 | `opex_fraction` | 0.03 | Annual OPEX as fraction of CAPEX |
 | `replacement_interval_years` | 2.0 | Years between FWBS/divertor replacements |
 | `replacement_downtime_months` | 4.0 | Downtime per replacement |

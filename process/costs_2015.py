@@ -66,7 +66,7 @@ class Costs2015:
         # =====================================================================
         # NOAK learning curve: apply Wright's law per cost category
         # C_NOAK = C_FOAK * n^(-b), b = -log2(1 - learning_rate)
-        # s_cost values computed above are FOAK in 1990$.
+        # s_cost values computed above are FOAK in 2014$.
         # We apply NOAK and inflation as multipliers WITHOUT modifying s_cost
         # in-place, to remain idempotent across repeated evaluations.
         # =====================================================================
@@ -87,7 +87,7 @@ class Costs2015:
         noak_bop = _noak_factor(cost_variables.learning_rate_bop)
         noak_misc = _noak_factor(cost_variables.learning_rate_misc)
 
-        inf = cost_variables.inflation_factor  # 1990$ -> target year
+        inf = cost_variables.inflation_factor  # 2014$ -> target year
 
         # Build a per-item scaling array: noak_factor * inflation
         scale = np.ones(100)

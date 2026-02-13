@@ -353,7 +353,7 @@ learning_rate_misc: float = None
 
 
 inflation_factor: float = None
-"""Inflation factor from 1990$ to target year (e.g. 2.49 for 1990->2026$)"""
+"""Inflation factor from 2014$ to target year (e.g. 1.37 for 2014->2026$)"""
 
 
 opex_fraction: float = None
@@ -1545,7 +1545,7 @@ def init_cost_variables():
     learning_rate_vv = 0.10
     learning_rate_bop = 0.05
     learning_rate_misc = 0.08
-    inflation_factor = 2.49
+    inflation_factor = 1.37
     opex_fraction = 0.03
     replacement_interval_years = 2.0
     replacement_downtime_months = 4.0
