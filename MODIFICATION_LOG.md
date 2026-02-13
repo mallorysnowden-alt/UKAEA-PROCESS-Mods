@@ -69,18 +69,73 @@ by the 2015 Kovari costing model (`process/costs_2015.py`).
   pip install
 - Added `try/except` fallback to `__version__ = "dev"`
 
+## NOAK Costing, Inflation, and LCOE Overhaul
+
+### Cost Model Changes (`process/costs_2015.py`)
+- **Switched to 2015 Kovari model** (`cost_model = 1`) with LSA = 2
+- **NOAK learning curve** via Wright's law: `C_NOAK = C_FOAK * n^(-b)`, where `b = -log2(1 - learning_rate)`, applied as idempotent post-processing scale on `s_cost[]`
+- **Inflation adjustment**: All costs scaled from 1990$ to 2026$ (factor = 2.49)
+- **Replaced LCOE formula** with Capital Recovery Factor (CRF) approach:
+  ```
+  CRF = r(1+r)^L / ((1+r)^L - 1)
+  LCOE = (annual_capital + annual_opex + annual_replacement) / annual_electric_output
+  ```
+- **OPEX**: Fraction of CAPEX per year (default 3%)
+- **Replacement costs**: FWBS + divertor costs amortized over replacement interval
+- **Effective availability**: Reduced by replacement downtime fraction
+
+### Learning Rates by Technical Maturity
+
+| Category | Learning Rate | Rationale |
+|----------|--------------|-----------|
+| Buildings | 5% | Mature construction, minimal learning |
+| Land | 0% | Fixed cost, no learning |
+| TF coils | 10% | Complex but established SC magnet tech |
+| FWBS (first wall/blanket/shield) | 15% | Low TRL, high learning potential |
+| Remote handling | 12% | Novel systems, significant learning |
+| Vacuum vessel | 10% | Large-scale welded structures |
+| Balance of plant | 5% | Mature thermal/electrical systems |
+| Miscellaneous | 8% | Mixed maturity subsystems |
+
+### New Input Variables (`process/data_structure/cost_variables.py`, `process/input.py`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `n_noak_units` | 10 | NOAK learning curve unit number |
+| `learning_rate_buildings` | 0.05 | Wright's law learning rate for buildings |
+| `learning_rate_land` | 0.0 | Learning rate for land costs |
+| `learning_rate_tf_coils` | 0.10 | Learning rate for TF coils |
+| `learning_rate_fwbs` | 0.15 | Learning rate for FWBS |
+| `learning_rate_rh` | 0.12 | Learning rate for remote handling |
+| `learning_rate_vv` | 0.10 | Learning rate for vacuum vessel |
+| `learning_rate_bop` | 0.05 | Learning rate for balance of plant |
+| `learning_rate_misc` | 0.08 | Learning rate for miscellaneous |
+| `inflation_factor` | 2.49 | Inflation multiplier (1990$ -> 2026$) |
+| `opex_fraction` | 0.03 | Annual OPEX as fraction of CAPEX |
+| `replacement_interval_years` | 2.0 | Years between FWBS/divertor replacements |
+| `replacement_downtime_months` | 4.0 | Downtime per replacement |
+| `discount_rate` | 0.08 | Discount rate for CRF calculation |
+| `plant_lifetime_years` | 30.0 | Plant economic lifetime |
+
+### Input File Updates (`examples/data/large_tokamak_IN.DAT`)
+- Set `cost_model = 1` (2015 Kovari model)
+- Set `lsa = 2` (Level of Safety Assurance)
+- Added all NOAK, inflation, OPEX, replacement, and LCOE parameters
+
 ## Validation
 
-PROCESS finds a feasible solution with complete output (1.09 MB MFILE.DAT, 177 KB OUT.DAT)
-using the modified `large_tokamak_IN.DAT`. Key results:
+PROCESS finds a feasible solution using the modified `large_tokamak_IN.DAT`.
+
+### Key Results (NOAK, 2026$, LSA=2, pulsed operation)
 
 | Parameter | Value |
 |-----------|-------|
-| rmajor | 6.69 m |
-| p_fusion_total_mw | 1,672 MW |
-| coe | 6,019 m$/kWh |
-| capcost | 9,741 M$ |
+| Major radius (rmajor) | ~8.3 m |
+| Net electric power | 400 MW |
+| Total overnight CAPEX | ~42,349 M$ (2026$, NOAK) |
+| Capacity factor (cpfact) | 4.80% |
+| Burn time | 169 s |
+| LCOE | ~48,151 $/MWh |
 | f_t_plant_available | 0.80 |
-| Net electric power | ~400 MW |
 
-Cost basis: NOAK (fkind=1.0), LSA=4 (most conservative safety assurance level).
+**Note**: The high LCOE is driven by the extremely low capacity factor (4.8%) from pulsed operation with a 169-second burn time and 1800-second dwell. For steady-state or long-pulse operation (the intended use case), the capacity factor approaches 80% and the LCOE would be approximately $2,900/MWh — still high for a FOAK-class CAPEX, but representative of early fusion economics.

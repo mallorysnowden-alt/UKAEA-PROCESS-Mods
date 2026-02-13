@@ -490,8 +490,40 @@ qnuc = 1.3E4
 * Switch off costs output
 output_costs = 1
 
-* Costs model switch
-cost_model = 0
+* Costs model switch (1 = 2015 Kovari model)
+cost_model = 1
+
+* Level of Safety Assurance (1=cheapest, 4=most conservative)
+lsa = 2
+
+* NOAK learning curve: 10th reactor
+n_noak_units = 10
+
+* Learning rates by technical maturity (fraction)
+learning_rate_buildings = 0.05
+learning_rate_land = 0.0
+learning_rate_tf_coils = 0.10
+learning_rate_fwbs = 0.15
+learning_rate_rh = 0.12
+learning_rate_vv = 0.10
+learning_rate_bop = 0.05
+learning_rate_misc = 0.08
+
+* Inflation factor from 1990$ to 2026$
+inflation_factor = 2.49
+
+* OPEX as fraction of CAPEX per year
+opex_fraction = 0.03
+
+* Replacement interval and downtime
+replacement_interval_years = 2.0
+replacement_downtime_months = 4.0
+
+* Discount rate for LCOE
+discount_rate = 0.08
+
+* Plant economic lifetime
+plant_lifetime_years = 30.0
 
 * Total plant availability fraction;
 f_t_plant_available = 0.80

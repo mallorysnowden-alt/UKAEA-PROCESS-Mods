@@ -387,6 +387,48 @@ INPUT_VARIABLES = {
         data_structure.cost_variables, float, range=(0.1, 10.0)
     ),
     "costexp": InputVariable(data_structure.cost_variables, float, range=(0.01, 5.0)),
+    "inflation_factor": InputVariable(
+        data_structure.cost_variables, float, range=(0.1, 10.0)
+    ),
+    "learning_rate_buildings": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_land": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_tf_coils": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_fwbs": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_rh": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_vv": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_bop": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "learning_rate_misc": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.5)
+    ),
+    "n_noak_units": InputVariable(
+        data_structure.cost_variables, int, range=(1, 1000)
+    ),
+    "opex_fraction": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 0.2)
+    ),
+    "plant_lifetime_years": InputVariable(
+        data_structure.cost_variables, float, range=(1.0, 100.0)
+    ),
+    "replacement_interval_years": InputVariable(
+        data_structure.cost_variables, float, range=(0.5, 30.0)
+    ),
+    "replacement_downtime_months": InputVariable(
+        data_structure.cost_variables, float, range=(0.0, 24.0)
+    ),
     "costexp_pebbles": InputVariable(
         data_structure.cost_variables, float, range=(0.01, 5.0)
     ),

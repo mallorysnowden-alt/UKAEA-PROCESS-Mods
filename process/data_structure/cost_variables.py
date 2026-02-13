@@ -323,6 +323,59 @@ cost_factor_misc: float = None
 """cost scaling factor for remaining subsystems"""
 
 
+n_noak_units: int = None
+"""Number of units for NOAK learning curve calculation (e.g. 10 = 10th reactor)"""
+
+
+learning_rate_buildings: float = None
+"""Learning rate for buildings (fraction, e.g. 0.05 = 5%)"""
+
+learning_rate_land: float = None
+"""Learning rate for land (fraction, e.g. 0.0 = no learning)"""
+
+learning_rate_tf_coils: float = None
+"""Learning rate for TF coils (fraction)"""
+
+learning_rate_fwbs: float = None
+"""Learning rate for first wall/blanket/shield (fraction)"""
+
+learning_rate_rh: float = None
+"""Learning rate for remote handling (fraction)"""
+
+learning_rate_vv: float = None
+"""Learning rate for vacuum vessel (fraction)"""
+
+learning_rate_bop: float = None
+"""Learning rate for balance of plant / energy conversion (fraction)"""
+
+learning_rate_misc: float = None
+"""Learning rate for remaining subsystems (fraction)"""
+
+
+inflation_factor: float = None
+"""Inflation factor from 1990$ to target year (e.g. 2.49 for 1990->2026$)"""
+
+
+opex_fraction: float = None
+"""Annual OPEX as fraction of CAPEX (e.g. 0.03 = 3%)"""
+
+
+replacement_interval_years: float = None
+"""Interval between major component replacements (years)"""
+
+
+replacement_downtime_months: float = None
+"""Downtime per replacement (months)"""
+
+
+discount_rate: float = None
+"""Discount rate for LCOE calculation (e.g. 0.08 = 8%)"""
+
+
+plant_lifetime_years: float = None
+"""Plant economic lifetime for LCOE calculation (years)"""
+
+
 maintenance_fwbs: float = None
 """Maintenance cost factor: first wall, blanket, shield, divertor"""
 
@@ -1303,6 +1356,21 @@ def init_cost_variables():
         cost_factor_vv, \
         cost_factor_bop, \
         cost_factor_misc, \
+        n_noak_units, \
+        learning_rate_buildings, \
+        learning_rate_land, \
+        learning_rate_tf_coils, \
+        learning_rate_fwbs, \
+        learning_rate_rh, \
+        learning_rate_vv, \
+        learning_rate_bop, \
+        learning_rate_misc, \
+        inflation_factor, \
+        opex_fraction, \
+        replacement_interval_years, \
+        replacement_downtime_months, \
+        discount_rate, \
+        plant_lifetime_years, \
         maintenance_fwbs, \
         maintenance_gen, \
         amortization, \
@@ -1468,6 +1536,21 @@ def init_cost_variables():
     cost_factor_vv = 1.0
     cost_factor_bop = 1.0
     cost_factor_misc = 1.0
+    n_noak_units = 10
+    learning_rate_buildings = 0.05
+    learning_rate_land = 0.0
+    learning_rate_tf_coils = 0.10
+    learning_rate_fwbs = 0.15
+    learning_rate_rh = 0.12
+    learning_rate_vv = 0.10
+    learning_rate_bop = 0.05
+    learning_rate_misc = 0.08
+    inflation_factor = 2.49
+    opex_fraction = 0.03
+    replacement_interval_years = 2.0
+    replacement_downtime_months = 4.0
+    discount_rate = 0.08
+    plant_lifetime_years = 30.0
     maintenance_fwbs = 0.2
     maintenance_gen = 0.05
     amortization = 13.6

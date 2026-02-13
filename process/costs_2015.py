@@ -63,7 +63,63 @@ class Costs2015:
         # Calculate remaining subsystems costs
         self.calc_remaining_subsystems()
 
-        # Calculate total capital cost
+        # =====================================================================
+        # NOAK learning curve: apply Wright's law per cost category
+        # C_NOAK = C_FOAK * n^(-b), b = -log2(1 - learning_rate)
+        # s_cost values computed above are FOAK in 1990$.
+        # We apply NOAK and inflation as multipliers WITHOUT modifying s_cost
+        # in-place, to remain idempotent across repeated evaluations.
+        # =====================================================================
+        n = cost_variables.n_noak_units
+
+        def _noak_factor(lr):
+            if lr > 0.0 and n > 1:
+                b = -np.log2(1.0 - lr)
+                return n ** (-b)
+            return 1.0
+
+        noak_buildings = _noak_factor(cost_variables.learning_rate_buildings)
+        noak_land = _noak_factor(cost_variables.learning_rate_land)
+        noak_tf = _noak_factor(cost_variables.learning_rate_tf_coils)
+        noak_fwbs = _noak_factor(cost_variables.learning_rate_fwbs)
+        noak_rh = _noak_factor(cost_variables.learning_rate_rh)
+        noak_vv = _noak_factor(cost_variables.learning_rate_vv)
+        noak_bop = _noak_factor(cost_variables.learning_rate_bop)
+        noak_misc = _noak_factor(cost_variables.learning_rate_misc)
+
+        inf = cost_variables.inflation_factor  # 1990$ -> target year
+
+        # Build a per-item scaling array: noak_factor * inflation
+        scale = np.ones(100)
+        for i in range(9):       # buildings  (s_cost 0-8)
+            scale[i] = noak_buildings * inf
+        for i in range(9, 13):   # land       (s_cost 9-12)
+            scale[i] = noak_land * inf
+        for i in range(13, 21):  # TF coils   (s_cost 13-20)
+            scale[i] = noak_tf * inf
+        for i in range(21, 27):  # FWBS       (s_cost 21-26)
+            scale[i] = noak_fwbs * inf
+        for i in range(27, 31):  # RH         (s_cost 27-30)
+            scale[i] = noak_rh * inf
+        for i in range(31, 34):  # VV/N2      (s_cost 31-33)
+            scale[i] = noak_vv * inf
+        scale[34] = noak_bop * inf  # BOP/energy conversion
+        for i in range(35, 60):  # misc       (s_cost 35-59)
+            scale[i] = noak_misc * inf
+        scale[60] = noak_misc * inf  # contingency
+
+        # Apply NOAK + inflation to s_cost (these are recomputed from scratch
+        # each time by the calc_* methods above, so this is idempotent)
+        for i in range(100):
+            cost_2015_variables.s_cost[i] *= scale[i]
+
+        # Also scale s_cref for output consistency
+        for i in range(100):
+            cost_2015_variables.s_cref[i] *= inf
+
+        # =====================================================================
+        # Calculate total CAPEX (NOAK, inflation-adjusted)
+        # =====================================================================
         cost_2015_variables.total_costs = (
             cost_2015_variables.s_cost[8]
             + cost_2015_variables.s_cost[12]
@@ -78,15 +134,46 @@ class Costs2015:
         # Save as concost, the variable used as a Figure of Merit (M$)
         cost_variables.concost = cost_2015_variables.total_costs / 1.0e6
 
-        # Electrical output (given availability) for a whole year
+        # =====================================================================
+        # LCOE calculation with OPEX, replacement costs, and discounting
+        # =====================================================================
+        capex = cost_2015_variables.total_costs  # $ (NOAK, inflation-adjusted)
+        r = cost_variables.discount_rate
+        L = cost_variables.plant_lifetime_years
+
+        # Capital recovery factor: CRF = r(1+r)^L / ((1+r)^L - 1)
+        if r > 0.0:
+            crf = r * (1.0 + r) ** L / ((1.0 + r) ** L - 1.0)
+        else:
+            crf = 1.0 / L
+        annual_capital_charge = capex * crf
+
+        # OPEX = fraction of CAPEX per year
+        annual_opex = cost_variables.opex_fraction * capex
+
+        # Replacement costs: FWBS + divertor, amortized over replacement interval
+        replacement_cost = (
+            cost_2015_variables.s_cost[26]  # first wall and blanket
+            + cost_2015_variables.s_cost[37]  # divertor
+        )
+        annual_replacement = replacement_cost / cost_variables.replacement_interval_years
+
+        # Effective availability reduction from replacement downtime
+        repl_downtime_fraction = (
+            cost_variables.replacement_downtime_months
+            / (12.0 * cost_variables.replacement_interval_years)
+        )
+        effective_availability = cost_variables.cpfact * (1.0 - repl_downtime_fraction)
+
+        # Annual net electrical energy (MWh)
         cost_2015_variables.mean_electric_output = (
-            heat_transport_variables.p_plant_electric_net_mw * cost_variables.cpfact
+            heat_transport_variables.p_plant_electric_net_mw * effective_availability
         )
         cost_2015_variables.annual_electric_output = (
-            cost_2015_variables.mean_electric_output * 24.0e0 * 365.25e0
+            cost_2015_variables.mean_electric_output * 24.0 * 365.25
         )
 
-        # Annual maintenance cost.
+        # Legacy maintenance calculation (retained for output compatibility)
         cost_2015_variables.maintenance = (
             cost_2015_variables.s_cost[26] + cost_2015_variables.s_cost[37]
         ) * cost_variables.maintenance_fwbs + (
@@ -108,12 +195,11 @@ class Costs2015:
             + cost_2015_variables.s_cost[57]
         ) * cost_variables.maintenance_gen
 
-        # Levelized cost of electricity (LCOE) ($/MWh)
+        # LCOE ($/MWh)
         if cost_2015_variables.annual_electric_output > 0.00001:
-            cost_variables.coe = (1.0e0 / cost_2015_variables.annual_electric_output) * (
-                cost_2015_variables.total_costs / cost_variables.amortization
-                + cost_2015_variables.maintenance
-            )
+            cost_variables.coe = (
+                annual_capital_charge + annual_opex + annual_replacement
+            ) / cost_2015_variables.annual_electric_output
 
         # Switch on output if there is a NaN error
         if (abs(cost_variables.concost) > 9.99e99) or (
