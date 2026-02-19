@@ -1,10 +1,10 @@
-"""Entry point for outside-in reactor sizing with EU-DEMO validation.
+"""Entry point for TokamakSizeOptimizatIonTool with EU-DEMO validation.
 
 Run with:
     python3 -m process.sizing_runner
 """
 
-from process.sizing import SizingInputs, outside_in_sizing
+from process.sizing import SizingInputs, TokamakSizeOptimizatIonTool
 
 
 def run_demo_validation():
@@ -52,10 +52,10 @@ def run_demo_validation():
     )
 
     print("=" * 70)
-    print("  OUTSIDE-IN REACTOR SIZING — EU-DEMO VALIDATION")
+    print("  TokamakSizeOptimizatIonTool — EU-DEMO VALIDATION")
     print("=" * 70)
 
-    result = outside_in_sizing(inputs)
+    result = TokamakSizeOptimizatIonTool(inputs)
 
     # ---- Power Balance Summary ----
     pb = result.power_balance

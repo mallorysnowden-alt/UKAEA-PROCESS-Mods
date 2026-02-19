@@ -1,9 +1,13 @@
-"""Outside-in reactor sizing module.
+"""TokamakSizeOptimizatIonTool — Outside-in reactor sizing module.
 
 Given P_net and Q_eng as fixed inputs, derives P_fusion from a top-down power
 balance, then sweeps ion temperature to find the minimum feasible major radius
 satisfying physics constraints (Greenwald density, Troyon beta, kink stability,
 and energy confinement).
+
+Usage:
+    from process.sizing import SizingInputs, TokamakSizeOptimizatIonTool
+    result = TokamakSizeOptimizatIonTool(SizingInputs(p_net_mw=500, q_eng=3.0))
 """
 
 from dataclasses import dataclass, field
@@ -422,8 +426,8 @@ def find_minimum_radius(
 # Main sizing routine
 # ---------------------------------------------------------------------------
 
-def outside_in_sizing(inp: SizingInputs) -> SizingResult:
-    """Run the full outside-in sizing: power balance → T_i sweep → R_min search.
+def TokamakSizeOptimizatIonTool(inp: SizingInputs) -> SizingResult:
+    """Run the full outside-in sizing: power balance -> T_i sweep -> R_min search.
 
     Returns the optimal (T_i, R_min) operating point and the full sweep data.
     """
