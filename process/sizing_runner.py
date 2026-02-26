@@ -36,8 +36,8 @@ def print_result(result: SizingResult, inputs: SizingInputs, ref_name: str, r_re
     print(f"  beta_N      = {result.beta_n:8.3f}      (limit: {inputs.beta_n_max})")
     print(f"  H_required  = {result.h_required:8.3f}      (limit: {inputs.h_max})")
     print(f"  f_Greenwald = {result.f_gw:8.3f}      (limit: {inputs.f_gw_max})")
-    print(f"  NWL         = {result.wall_load_mw_m2:8.3f} MW/m^2")
-    print(f"  P_sep/R     = {result.p_sep_r_mw_m:8.2f} MW/m")
+    print(f"  NWL         = {result.wall_load_mw_m2:8.3f} MW/m^2  (limit: {inputs.p_nw_max})")
+    print(f"  P_sep/R     = {result.p_sep_r_mw_m:8.2f} MW/m    (limit: {inputs.p_sep_r_max})")
     print(f"  V_plasma    = {result.vol_plasma_m3:8.1f} m^3")
     print(f"  Binding     = {result.binding_constraint}")
 
@@ -73,7 +73,7 @@ def run_demo_validation():
         eta_absorption=0.80,
         f_aux_recirc=0.80,
 
-        m_blanket=1.14,
+        blanket_type="HCPB",
 
         aspect=3.1,
         kappa=1.65,
@@ -97,7 +97,7 @@ def run_demo_validation():
 
     print("=" * 70)
     print("  TokamakSizeOptimizatIonTool -- EU-DEMO VALIDATION")
-    print("  B_t = 5.3 T (Nb3Sn)  Blanket M = 1.14 (HCPB)")
+    print("  B_t = 5.3 T (Nb3Sn)  Blanket: HCPB (M=1.14, NWL<=2.0)")
     print("=" * 70)
 
     result = TokamakSizeOptimizatIonTool(inputs)
@@ -116,7 +116,7 @@ def run_arc_validation():
         eta_absorption=0.90,
         f_aux_recirc=0.50,
 
-        m_blanket=1.20,
+        blanket_type="FLiBe",
 
         aspect=3.0,
         kappa=1.84,
@@ -140,7 +140,7 @@ def run_arc_validation():
 
     print("=" * 70)
     print("  TokamakSizeOptimizatIonTool -- ARC VALIDATION")
-    print("  B_t = 9.2 T (HTS REBCO)  Blanket M = 1.20 (FLiBe)")
+    print("  B_t = 9.2 T (HTS REBCO)  Blanket: FLiBe (M=1.20, NWL<=10.0)")
     print("=" * 70)
 
     result = TokamakSizeOptimizatIonTool(inputs)
@@ -166,6 +166,7 @@ def run_str480_validation():
         eta_absorption=0.90,
         f_aux_recirc=0.50,
 
+        blanket_type="HCPB",
         m_blanket=1.15,
 
         aspect=1.9,
@@ -190,7 +191,7 @@ def run_str480_validation():
 
     print("=" * 70)
     print("  TokamakSizeOptimizatIonTool -- STR480 VALIDATION")
-    print("  B_t = 3.30 T (HTS)  A = 1.9  SARAS benchmarking study")
+    print("  B_t = 3.30 T (HTS)  A = 1.9  Blanket: HCPB (M=1.15 override)")
     print("=" * 70)
 
     result = TokamakSizeOptimizatIonTool(inputs)

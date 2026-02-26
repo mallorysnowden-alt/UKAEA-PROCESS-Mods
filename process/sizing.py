@@ -3,7 +3,7 @@
 Given P_net and Q_eng as fixed inputs, derives P_fusion from a top-down power
 balance, then sweeps ion temperature to find the minimum feasible major radius
 satisfying physics constraints (Greenwald density, Troyon beta, kink stability,
-and energy confinement) and optional engineering constraints (neutron wall load,
+and energy confinement) and engineering constraints (neutron wall load,
 divertor heat exhaust P_sep/R).
 
 Usage:
@@ -28,6 +28,20 @@ from process.plasma_geometry import PlasmaGeom
 
 
 # ---------------------------------------------------------------------------
+# Blanket parameters database
+# ---------------------------------------------------------------------------
+
+BLANKET_PARAMS = {
+    #                  m_blanket  p_nw_max [MW/m^2]
+    "HCPB":  {"m": 1.14, "nwl": 2.0},   # He-cooled pebble bed (EU-DEMO)
+    "WCLL":  {"m": 1.18, "nwl": 2.5},   # Water-cooled lithium lead
+    "DCLL":  {"m": 1.22, "nwl": 4.0},   # Dual-coolant lithium lead
+    "FLiBe": {"m": 1.20, "nwl": 10.0},  # Molten salt (ARC-type)
+    "LiPb":  {"m": 1.28, "nwl": 5.0},   # Self-cooled liquid metal
+}
+
+
+# ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
 
@@ -45,8 +59,10 @@ class SizingInputs:
     eta_absorption: float = 0.90  # Plasma heating absorption efficiency
     f_aux_recirc: float = 0.50  # Fraction of P_recirc NOT going to HCD
 
-    # Blanket
-    m_blanket: float = 1.14  # Blanket energy multiplication factor
+    # Blanket — blanket_type sets defaults for m_blanket and p_nw_max
+    blanket_type: str = "HCPB"
+    m_blanket: float = None  # Override blanket energy multiplication
+    p_nw_max: float = None   # Override max neutron wall load [MW/m^2]
 
     # Geometry
     aspect: float = 3.1
@@ -63,9 +79,8 @@ class SizingInputs:
     h_max: float = 1.3
     f_gw_max: float = 1.0
 
-    # Engineering limits (None = disabled)
-    p_nw_max: float = None   # Max neutron wall load [MW/m^2]
-    p_sep_r_max: float = None  # Max P_sep/R [MW/m]
+    # Engineering limits
+    p_sep_r_max: float = None  # Max P_sep/R [MW/m] (auto: 40 conv, 60 ST)
 
     # Temperature sweep
     t_i_range_kev: tuple = (8.0, 30.0)
@@ -79,6 +94,20 @@ class SizingInputs:
 
     # Fuel dilution
     f_fuel_dilution: float = 1.0
+
+    def __post_init__(self):
+        if self.blanket_type not in BLANKET_PARAMS:
+            raise ValueError(
+                f"Unknown blanket_type '{self.blanket_type}'. "
+                f"Choose from: {list(BLANKET_PARAMS.keys())}"
+            )
+        bp = BLANKET_PARAMS[self.blanket_type]
+        if self.m_blanket is None:
+            self.m_blanket = bp["m"]
+        if self.p_nw_max is None:
+            self.p_nw_max = bp["nwl"]
+        if self.p_sep_r_max is None:
+            self.p_sep_r_max = 60.0 if self.aspect < 2.5 else 40.0
 
 
 @dataclass
@@ -257,8 +286,8 @@ def check_feasibility(
     """Evaluate all constraints at a given (R, T_i) operating point.
 
     Checks (in order):
-      1. Neutron wall load  — p_nw <= p_nw_max  (if enabled)
-      2. P_sep/R            — P_sep/R <= p_sep_r_max  (if enabled)
+      1. Neutron wall load  — p_nw <= p_nw_max
+      2. P_sep/R            — P_sep/R <= p_sep_r_max
       3. Greenwald density   — n_e/n_GW <= f_gw_max
       4. Troyon beta         — beta_N <= beta_N_max
       5. Energy confinement  — H_req <= H_max
