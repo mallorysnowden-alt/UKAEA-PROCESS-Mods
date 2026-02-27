@@ -4,6 +4,96 @@ All changes relative to the `main` branch.
 
 ---
 
+## Add SC_PARAMS database, TF coil model, and inboard build constraint
+
+### New: Superconductor parameters database (`SC_PARAMS`)
+
+A lookup table maps `sc_type` to peak field, stress allowable, and TF fraction of the inboard radial stack:
+
+| `sc_type` | B_peak (T) | σ_TF (MPa) | tf_frac | Description |
+|---|---|---|---|---|
+| `"NbTi"` | 8.0 | 660 | 0.30 | LTS, most shielding needed at 4K |
+| `"Nb3Sn"` | 12.0 | 660 | 0.33 | LTS, thick cryo+neutron shielding at 4K |
+| `"REBCO"` | 20.0 | 900 | 0.50 | HTS, thin cryo shielding at 20–30K |
+
+`tf_frac` reflects that LTS coils require proportionally more cryogenic and neutron shielding in the inboard stack than HTS, so the TF coil occupies a smaller fraction.
+
+### New: B_t derived from superconductor choice
+
+`b_t` is now auto-derived from `sc_type`, `b_t_fraction`, and aspect ratio via the stress-driven TF coil model:
+
+```
+k = B_peak² / (2μ₀ × f_struc × σ)
+B_t_max = B_peak × (1 - 1/A) / (1 + k)
+B_t = b_t_fraction × B_t_max
+```
+
+Users select a superconductor and operating fraction rather than specifying B_t directly. Explicit `b_t` override is still supported.
+
+### New: TF coil thickness and inboard build constraint
+
+`compute_tf_coil_thickness` computes the stress-driven radial thickness: `Δ_TF = k × R_inboard / (1 + k)`.
+
+The full inboard build requirement is:
+
+```
+IB_required = Δ_TF / tf_frac + tf_build_buffer
+```
+
+where `tf_build_buffer = 0.8m` represents non-TF inboard components (VV, thermal shield, insulation, gaps). A post-check after the T_i sweep enforces `IB_required ≤ R_inboard`, computing an analytical R_floor when violated:
+
+```
+R_floor = tf_build_buffer / [(1 - 1/A) × (1 - k / (tf_frac × (1 + k)))]
+```
+
+### New: `delta_tf_m` output field
+
+Added to `PointResult` and `SizingResult` for reporting the stress-driven TF coil thickness at the operating point.
+
+### New: ST power sweep (`run_st_sweep`)
+
+Sweeps P_net from 50–250 MW for a spherical tokamak (REBCO, A=1.9, full B_t) with R_floor column. Demonstrates `inboard_build` binding at low power where physics R_min drops below the build floor.
+
+### Changed: `SizingInputs` fields
+
+| Field | Before | After |
+|---|---|---|
+| `b_t` | `float = 5.3` (direct input) | `float = None` (auto from SC + geometry) |
+| `sc_type` | — | `str = "Nb3Sn"` (new) |
+| `b_t_fraction` | — | `float = 1.0` (new) |
+| `sigma_tf_mpa` | — | `float = None` (auto from SC) |
+| `b_peak_t` | — | `float = None` (auto from SC) |
+| `f_tf_struc` | — | `float = 0.5` (new) |
+| `tf_build_margin` | — | `float = None` (auto = 1/tf_frac from SC) |
+| `tf_build_buffer` | — | `float = 0.8` (new) |
+
+### Changed: Validation cases use `sc_type` + `b_t_fraction`
+
+All three validation cases now specify superconductor type and operating fraction instead of explicit B_t:
+
+| Case | sc_type | b_t_fraction | Derived B_t |
+|---|---|---|---|
+| EU-DEMO | Nb3Sn | 0.77 | 5.3 T |
+| ARC | REBCO | 0.93 | 9.2 T |
+| STR480 | Nb3Sn | 0.68 | 3.3 T |
+
+### Files modified
+
+- `process/sizing.py` — Added `SC_PARAMS`, SC resolution in `__post_init__`, `compute_tf_coil_thickness`, inboard build post-check, `delta_tf_m` field
+- `process/sizing_runner.py` — Updated validation cases to use `sc_type`/`b_t_fraction`; added inboard build display; added `run_st_sweep`
+
+### Validation summary
+
+| Design | Reference R (m) | Computed R (m) | Deviation | Binding Constraint |
+|---|---|---|---|---|
+| EU-DEMO | 9.1 | 8.25 | -9.4% | confinement |
+| ARC | 3.3 | 3.54 | +7.3% | p_sep_r |
+| STR480 | 4.8 | 5.46 | +13.7% | confinement |
+
+All within the ±15% acceptance band.
+
+---
+
 ## `f5c0b4c7` — Add blanket_type lookup and default-ON engineering constraints
 
 ### New: Blanket type database (`BLANKET_PARAMS`)
@@ -159,8 +249,8 @@ Result: R = 8.32 m vs 9.1 m reference (-8.6%) **[PASS]**
 
 | Design | Reference R (m) | Computed R (m) | Deviation | Binding Constraint |
 |---|---|---|---|---|
-| EU-DEMO | 9.1 | 8.32 | -8.6% | confinement |
+| EU-DEMO | 9.1 | 8.25 | -9.4% | confinement |
 | ARC | 3.3 | 3.54 | +7.3% | p_sep_r |
-| STR480 | 4.8 | 5.44 | +13.4% | confinement |
+| STR480 | 4.8 | 5.46 | +13.7% | confinement |
 
 All within the ±15% acceptance band.

@@ -42,6 +42,18 @@ BLANKET_PARAMS = {
 
 
 # ---------------------------------------------------------------------------
+# Superconductor parameters database
+# ---------------------------------------------------------------------------
+
+SC_PARAMS = {
+    #               b_peak [T]   sigma_tf [MPa]   tf_frac (TF fraction of IB stack)
+    "NbTi":   {"b_peak": 8.0,  "sigma": 660, "tf_frac": 0.30},   # LTS, most shielding at 4K
+    "Nb3Sn":  {"b_peak": 12.0, "sigma": 660, "tf_frac": 0.33},   # LTS, thick cryo+neutron shielding at 4K
+    "REBCO":  {"b_peak": 20.0, "sigma": 900, "tf_frac": 0.50},   # HTS, thin cryo shielding at 20-30K
+}
+
+
+# ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
 
@@ -69,8 +81,17 @@ class SizingInputs:
     kappa: float = 1.65
     triang: float = 0.33
 
-    # Technology
-    b_t: float = 5.3  # Toroidal field on axis (T)
+    # Superconductor / TF coil
+    sc_type: str = "Nb3Sn"        # Superconductor type (key into SC_PARAMS)
+    b_t: float = None             # Toroidal field on axis [T] (auto from SC + geometry)
+    b_t_fraction: float = 1.0     # Fraction of max B_t to operate at (0-1)
+    sigma_tf_mpa: float = None    # TF stress allowable [MPa] (auto from SC)
+    b_peak_t: float = None        # Peak field at TF coil [T] (auto from SC)
+    f_tf_struc: float = 0.5       # Structural fraction of TF coil cross-section
+    tf_build_margin: float = None  # 1/tf_frac; auto-resolved from sc_type
+    tf_build_buffer: float = 0.8  # Non-TF inboard build: VV, thermal shield, insulation, gaps [m]
+
+    # Fuel
     fuel_type: str = "DT"  # "DT" or "DHe3"
 
     # Physics limits
@@ -96,6 +117,7 @@ class SizingInputs:
     f_fuel_dilution: float = 1.0
 
     def __post_init__(self):
+        # Blanket parameters
         if self.blanket_type not in BLANKET_PARAMS:
             raise ValueError(
                 f"Unknown blanket_type '{self.blanket_type}'. "
@@ -108,6 +130,29 @@ class SizingInputs:
             self.p_nw_max = bp["nwl"]
         if self.p_sep_r_max is None:
             self.p_sep_r_max = 60.0 if self.aspect < 2.5 else 40.0
+
+        # Superconductor parameters
+        if self.sc_type not in SC_PARAMS:
+            raise ValueError(
+                f"Unknown sc_type '{self.sc_type}'. "
+                f"Choose from: {list(SC_PARAMS.keys())}"
+            )
+        sc = SC_PARAMS[self.sc_type]
+        if self.sigma_tf_mpa is None:
+            self.sigma_tf_mpa = sc["sigma"]
+        if self.b_peak_t is None:
+            self.b_peak_t = sc["b_peak"]
+        if self.tf_build_margin is None:
+            self.tf_build_margin = 1.0 / sc["tf_frac"]
+
+        # Derive B_t from SC + geometry if not explicitly set
+        if self.b_t is None:
+            mu0 = 4.0 * np.pi * 1e-7
+            k_tf = self.b_peak_t**2 / (
+                2.0 * mu0 * self.f_tf_struc * self.sigma_tf_mpa * 1e6
+            )
+            b_t_max = self.b_peak_t * (1.0 - 1.0 / self.aspect) / (1.0 + k_tf)
+            self.b_t = self.b_t_fraction * b_t_max
 
 
 @dataclass
@@ -143,6 +188,7 @@ class PointResult:
     w_thermal_mj: float
     wall_load_mw_m2: float
     p_sep_r_mw_m: float
+    delta_tf_m: float
     feasible: bool
     binding_constraint: str
 
@@ -168,6 +214,7 @@ class SizingResult:
     vol_plasma_m3: float
     wall_load_mw_m2: float
     p_sep_r_mw_m: float
+    delta_tf_m: float
 
     # Full sweep
     power_balance: PowerBalanceResult = None
@@ -238,6 +285,24 @@ def compute_first_wall_area(r: float, a: float, kappa: float) -> float:
     return 4.0 * np.pi**2 * r * a * np.sqrt((1.0 + kappa**2) / 2.0)
 
 
+def compute_tf_coil_thickness(
+    r: float, aspect: float, b_peak: float, sigma_pa: float,
+    f_struc: float,
+) -> float:
+    """Stress-driven TF coil radial thickness [m].
+
+    k = B_peak² / (2μ₀ × f_struc × σ)
+    Δ_TF = k × R_inboard / (1 + k)
+
+    The full inboard build requirement is computed externally as:
+        IB_required = Δ_TF × tf_build_margin + tf_build_buffer
+    """
+    mu0 = constants.RMU0
+    r_inboard = r * (1.0 - 1.0 / aspect)
+    k = b_peak**2 / (2.0 * mu0 * f_struc * sigma_pa)
+    return k * r_inboard / (1.0 + k)
+
+
 # ---------------------------------------------------------------------------
 # Top-down power balance
 # ---------------------------------------------------------------------------
@@ -299,6 +364,9 @@ def check_feasibility(
     a_fw = compute_first_wall_area(r, a, inp.kappa)
     wall_load = pb.p_neutron_mw / a_fw
     p_sep_r = pb.p_loss_mw * (1.0 - inp.f_rad) / r
+    delta_tf = compute_tf_coil_thickness(
+        r, inp.aspect, inp.b_peak_t, inp.sigma_tf_mpa * 1e6, inp.f_tf_struc,
+    )
 
     def _fail(binding, n_e=0.0, i_p_ma=0.0, beta_n=0.0, h_req=0.0,
               f_gw=0.0, tau_req=0.0, tau_nom=0.0, w_mj=0.0):
@@ -307,8 +375,8 @@ def check_feasibility(
             n_e_m3=n_e, i_p_ma=i_p_ma, beta_n=beta_n, h_required=h_req,
             f_gw=f_gw, tau_e_required_s=tau_req, tau_e_nominal_s=tau_nom,
             w_thermal_mj=w_mj, wall_load_mw_m2=wall_load,
-            p_sep_r_mw_m=p_sep_r, feasible=False,
-            binding_constraint=binding,
+            p_sep_r_mw_m=p_sep_r, delta_tf_m=delta_tf,
+            feasible=False, binding_constraint=binding,
         )
 
     # CHECK 1: Neutron wall load (optional)
@@ -382,8 +450,8 @@ def check_feasibility(
         n_e_m3=n_e, i_p_ma=i_p_ma, beta_n=beta_n, h_required=h_required,
         f_gw=f_gw, tau_e_required_s=tau_required, tau_e_nominal_s=tau_nominal,
         w_thermal_mj=w_thermal_mj, wall_load_mw_m2=wall_load,
-        p_sep_r_mw_m=p_sep_r, feasible=feasible,
-        binding_constraint=binding,
+        p_sep_r_mw_m=p_sep_r, delta_tf_m=delta_tf,
+        feasible=feasible, binding_constraint=binding,
     )
 
 
@@ -481,6 +549,32 @@ def TokamakSizeOptimizatIonTool(inp: SizingInputs) -> SizingResult:
             "Try relaxing constraints or increasing the T_i range."
         )
 
+    # --- Inboard build post-check ---
+    # IB_required = Δ_TF_stress × margin + buffer ≤ R_inboard
+    delta_tf = compute_tf_coil_thickness(
+        best_point.r_major_m, inp.aspect, inp.b_peak_t,
+        inp.sigma_tf_mpa * 1e6, inp.f_tf_struc,
+    )
+    r_inboard = best_point.r_major_m * (1.0 - 1.0 / inp.aspect)
+    ib_required = delta_tf * inp.tf_build_margin + inp.tf_build_buffer
+    if ib_required > r_inboard:
+        # Build doesn't fit — compute R_floor analytically
+        # R(1-1/A) = margin × k/(1+k) × R(1-1/A) + buffer
+        # → R_floor = buffer / [(1-1/A) × (1 - margin × k/(1+k))]
+        mu0 = constants.RMU0
+        k_tf = inp.b_peak_t**2 / (
+            2.0 * mu0 * inp.f_tf_struc * inp.sigma_tf_mpa * 1e6
+        )
+        denom = (1.0 - 1.0 / inp.aspect) * (
+            1.0 - inp.tf_build_margin * k_tf / (1.0 + k_tf)
+        )
+        r_floor_build = inp.tf_build_buffer / denom
+        best_binding = "inboard_build"
+        sigmav_opt = bosch_hale_scalar(best_point.t_i_kev, fuel["constants"])
+        best_point = check_feasibility(
+            r_floor_build, best_point.t_i_kev, sigmav_opt, pb, inp, fuel,
+        )
+
     return SizingResult(
         r_major_m=best_point.r_major_m,
         t_i_optimal_kev=best_point.t_i_kev,
@@ -499,6 +593,7 @@ def TokamakSizeOptimizatIonTool(inp: SizingInputs) -> SizingResult:
         vol_plasma_m3=best_point.vol_plasma_m3,
         wall_load_mw_m2=best_point.wall_load_mw_m2,
         p_sep_r_mw_m=best_point.p_sep_r_mw_m,
+        delta_tf_m=best_point.delta_tf_m,
         power_balance=pb,
         sweep_results=sweep_results,
     )
